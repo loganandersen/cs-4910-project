@@ -1,0 +1,3 @@
+# As of now these are just reccomended but may be changed
+python-daemon
+pycryptodome
