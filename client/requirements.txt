@@ -1,2 +1,5 @@
 # These may be subject to change
 pycryptodome
+pyotp
+qrcode
+
