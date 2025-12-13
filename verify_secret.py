@@ -1,7 +1,9 @@
 import pyotp
 import time
 
-secret = "REEL7JCUOHJ7TRSAHCZIODBKH2JLAXRK"    # Replace with your real secret
+with open("secret.txt", "r") as f: #reads the generated key 
+    secret = f.readline().strip()
+    
 totp = pyotp.TOTP(secret)
 
 user_code = input("Enter your 2FA code: ")
