@@ -10,29 +10,13 @@
 
 **2-**In the terminal run the following:
 
-**python generate\_secret.py**
+**python master\_script**
 
-This makes the following:
-
-A key saved for use by other scripts
-Encrypts the key
-
-Makes a QR code for the user to store
+This will run all scrips
 
 
 
-**3-**Now run the following in the terminal:
-**python verify\_secret.py**
-
-This will decrypt the saved key
-It will ask you for your 6 digit key saved on your phone
-If correct or not, displays the result
-
-
-
-
-
-**3.5 Using the app-** Using the app "FreeOTP" (icon is a spin style lock) scan the generated QR code
+**Using the app-** Using the app "FreeOTP" (icon is a spin style lock) scan the generated QR code
 
 
 
@@ -44,5 +28,11 @@ It changes every few seconds, it will still work as intended.
 
 
 
+**To access the temporary emails needed for this demo:**
 
+Email-1: cs3900testforme@gmail.com
+
+Password: CS3900TEST4ME!
+
+If it askes for 2FA(from google) message me!
 
