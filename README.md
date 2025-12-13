@@ -12,4 +12,5 @@ Who actually gets the password file should be defined in a policy (see the githu
 
 This project is split into two parts, the client and the server. The server is a daemon that can store encrypted password files for later decryption by clients. The clients are the programs that encrypt the files, and get the final results. 
 
-
+## suggestions
+It would probably make sense to use JSON files to specify the commands and the policies.
