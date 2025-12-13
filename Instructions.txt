@@ -1,0 +1,16 @@
+1:Need the following installed:
+pip install pyotp qrcode[pil]
+
+2:The "generate_secret" makes a string that needs to be copied and put into the "verify_secret"
+
+Looks like the following:
+secret = "REEL7JCUOHJ7TRSAHCZIODBKH2JLAXRK"  
+  # Replace with your real secret
+
+
+2: Using the app "FreeOTP" (icon is a spin style lock) scan the generated QR code
+
+This will save the key. When you tap it, it shows a 6 digit code that will be the correct 2FA code
+
+It changes every few seconds, it will still work as intended.
+
