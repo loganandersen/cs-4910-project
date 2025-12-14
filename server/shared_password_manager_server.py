@@ -97,6 +97,18 @@ class Handler(socketserver.BaseRequestHandler):
                     with sessions_lock:
                         sessions.pop(token, None)
                     send_json(ssock, {"status": "ok"})
+                # TODO
+                elif action == "create_policy":
+                    pass
+                # TODO
+                elif action == "request_download" :
+                    pass
+                # TODO 
+                elif action == "approve_download" :
+                    pass
+                # TODO
+                elif action == "reset_password" :
+                    pass
                 else:
                     send_json(ssock, {"status": "fail", "reason": "unknown action"})
         except (ssl.SSLError, OSError) as e:
