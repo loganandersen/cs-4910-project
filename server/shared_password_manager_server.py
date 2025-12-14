@@ -212,7 +212,6 @@ class Handler(socketserver.BaseRequestHandler):
                         # Respond back to the client that the policy was successfully created
                         send_json(ssock, {"status": "ok", "reason": "policy created"})
 
-                # TODO
                 elif action == "download" :
                     token = msg.get("token")
                     user = validate_token(token)  # Validate the provided token
@@ -253,6 +252,7 @@ class Handler(socketserver.BaseRequestHandler):
                         continue
 
                     policy_name = msg.get("policy_name")
+                    deny = msg.get("deny")
     
                     with pending_requests_lock:
                         if policy_name not in pending_requests:
@@ -261,21 +261,16 @@ class Handler(socketserver.BaseRequestHandler):
 
                         requesting_user, _, requesting_socket = pending_requests[policy_name]  # Get the socket
                         secret,salt = get_policy_by_name(policy_name)[4:6]
-
-                        action = input("Would you like to approve the download? (y for yes)")
-                        if (action == "y") :
-                            # Proceed to approve the request
+                      
+                        if (deny == "no") :
                             del pending_requests[policy_name]  # Remove the request from pending
                             send_json(ssock, {"status": "ok", "reason": "download approved"})
                             send_json(requesting_socket, {"status": "ok", "secret": secret, "salt": salt})
                         else :
-                             send_json(ssock, {"status": "ok", "reason": "download rejected"})
-                             send_json(requesting_socket, {"status": "fail", "reason": "authorizer rejection"})
+                            del pending_requests[policy_name]  # Remove the request from pending
+                            send_json(ssock, {"status": "ok", "reason": "download denied"})
+                            send_json(requesting_socket, {"status": "fail", "reason": "authenticator denied your request"})
 
-
-
-
-                    
 
                 else:
                     send_json(ssock, {"status": "fail", "reason": "unknown action"})

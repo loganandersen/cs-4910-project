@@ -169,7 +169,27 @@ def download(sock, token, policy_name):
                 break
             time.sleep(1)  # Wait a little before polling again
 
-    
+
+def approve_or_deny_download(sock, token, policy_name,deny):
+    """Send a request to approve a download for a policy."""
+    action = "approve_download"
+    msg = {
+        "action": action,
+        "token": token,
+        "policy_name": policy_name
+        "deny" : "yes" if deny else "no"
+    }
+    send_json(sock, msg)
+
+    response = recv_json(sock)
+    print("Response from server:", response)
+
+def approve_download(sock, token,policy_name) :
+    approve_or_deny_download(sock, token, policy_name,deny=False)
+
+def deny_download(sock, token,policy_name) :
+    approve_or_deny_download(sock, token, policy_name,deny=True)
+
 
     
 def main():
@@ -219,9 +239,21 @@ def main():
                     print("- help: Show this help message.")
                     print("- download: request to download a file")
                     print("- authenticate: authenticate a download request")
+                    print("- deny: deny a download request")
+                    
                 elif command == "download":
                     policyname = input("Enter name of policy you want to download: ")
                     download(sock, token, policyname)
+
+                elif command == "authenticate":
+                    policyname = input("Enter name of policy you want to authenticate: ")
+                    approve_download(sock,token,policyname)
+
+                elif command == "deny" :
+                    policyname = input("Enter name of policy you want to authenticate: ")
+                    approve_download(sock,token,policyname)
+                    
+                    
                 else:
                     print("Unknown command. Use 'help' for available commands.")
 
