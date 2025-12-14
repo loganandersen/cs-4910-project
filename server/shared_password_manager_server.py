@@ -131,7 +131,7 @@ def add_policy(name, user, authorizer, secret, salt):
         # Insert the new policy into the database
         cursor.execute('''
             INSERT INTO policies (name, user, authorizer, secret, salt, url)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         ''', (name, user, authorizer, secret, salt, url))
 
         connection.commit()
