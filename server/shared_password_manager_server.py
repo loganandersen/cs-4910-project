@@ -3,7 +3,7 @@
 import socketserver, ssl, socket, struct, json, time, secrets, threading
 import bcrypt
 import sqlite3
-import pyopt
+import pyotp
 
 DATABASE_NAME = "database.db"
 
