@@ -45,7 +45,8 @@ def init_db():
         user TEXT NOT NULL,
         authorizer TEXT NOT NULL,
         secret TEXT NOT NULL,
-        salt TEXT NOT NULL
+        salt TEXT NOT NULL,
+        url TEXT NOT NULL    
     )
     ''')
 
@@ -68,13 +69,14 @@ def get_user_password(username):
 def add_policy(name, user, authorizer, secret, salt):
     connection = sqlite3.connect(DATABASE_NAME)
     cursor = connection.cursor()
+    url = generate_totp_uri(user)
     
     try:
         # Insert the new policy into the database
         cursor.execute('''
             INSERT INTO policies (name, user, authorizer, secret, salt, 2FA_uri)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (name, user, authorizer, secret, salt))
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (name, user, authorizer, secret, salt, url))
 
         connection.commit()
         print(f"Policy '{name}' created successfully.")
