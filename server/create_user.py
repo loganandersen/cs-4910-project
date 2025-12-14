@@ -1,5 +1,6 @@
 import sqlite3
 import bcrypt
+from getpass import getpass
 
 DATABASE_NAME = 'database.db'
 
@@ -29,5 +30,5 @@ def create_user(username, password):
 if __name__ == "__main__":
     # Prompt for user input
     username = input("Enter the username: ")
-    password = input("Enter the password: ")
+    password = getpass()
     create_user(username, password)
