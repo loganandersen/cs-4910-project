@@ -155,6 +155,7 @@ def download(sock, token, policy_name):
             if message  :
                 print("Secret message below")
                 print(message)
+                break
             else :
                 print("No message found")
                 break
