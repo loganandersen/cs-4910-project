@@ -73,8 +73,9 @@ def get_policy_by_name(policy_name):
     policy = cursor.fetchone()
     
     connection.close()
-    
-    return policy[0] if policy else None # Returns None if not found, or a tuple representing the policy
+
+    print(policy)
+    return policy if policy else None # Returns None if not found, or a tuple representing the policy
 
 def list_policies(user):
     """Retrieve lists of policies for the user."""
