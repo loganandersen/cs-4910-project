@@ -43,8 +43,8 @@ os.remove(secret_path)
 # --------------------
 totp = pyotp.TOTP(secret)
 uri = totp.provisioning_uri(
-    name="CS3900 2FA",
-    issuer_name="generate_secret_test"
+    name="CS3900 2FA"+ user,
+    issuer_name="CS3900 2FA"
 )
 
 img = qrcode.make(uri)
