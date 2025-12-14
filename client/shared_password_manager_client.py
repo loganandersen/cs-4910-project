@@ -255,12 +255,15 @@ def main():
                     print("- download: request to download a file")
                     print("- authenticate: authenticate a download request")
                     print("- deny: deny a download request")
-                    print("- list_policies: list policies you are privy to")
+                    print("- list: list policies you are privy to")
                     
                 elif command == "download":
                     policyname = input("Enter name of policy you want to download: ")
                     download(sock, token, policyname)
 
+                elif command == "list" :
+                    list_policies(sock,token)
+                    
                 elif command == "authenticate":
                     policyname = input("Enter name of policy you want to authenticate: ")
                     approve_download(sock,token,policyname)
