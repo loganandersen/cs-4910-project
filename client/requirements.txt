@@ -1,6 +1,4 @@
 # These may be subject to change
 cryptography
-pyotp
-qrcode
 
 

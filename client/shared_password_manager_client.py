@@ -259,18 +259,18 @@ def main():
                     
                 elif command == "download":
                     policyname = input("Enter name of policy you want to download: ")
-                    download(sock, token, policyname)
+                    download(ssock, token, policyname)
 
                 elif command == "list" :
-                    list_policies(sock,token)
+                    list_policies(ssock,token)
                     
                 elif command == "authenticate":
                     policyname = input("Enter name of policy you want to authenticate: ")
-                    approve_download(sock,token,policyname)
+                    approve_download(ssock,token,policyname)
 
                 elif command == "deny" :
                     policyname = input("Enter name of policy you want to authenticate: ")
-                    approve_download(sock,token,policyname)
+                    approve_download(ssock,token,policyname)
                     
                     
                 else:
