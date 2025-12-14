@@ -2,6 +2,12 @@
 #https://docs.python.org/3/library/socketserver.html + chatgpt
 import socketserver, ssl, socket, struct, json, time, secrets, threading
 import bcrypt
+import sqlite3
+import pyopt
+
+DATABASE_NAME = "database.db"
+
+APP_NAME = "cs-4910-shared-password-manager"
 
 CERTFILE = "cert.pem"
 KEYFILE = "key.pem"
@@ -16,6 +22,59 @@ USERS = {
 # In-memory session store: token -> (username, expiry)
 sessions = {}
 sessions_lock = threading.Lock()
+
+# Initialize the SQLite database
+def init_db():
+    connection = sqlite3.connect('example.db')
+    cursor = connection.cursor()
+
+    # Create users table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL
+    )
+    ''')
+
+    # Create policies table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS policies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        user TEXT NOT NULL,
+        authorizer TEXT NOT NULL,
+        secret TEXT NOT NULL,
+        salt TEXT NOT NULL
+    )
+    ''')
+
+    connection.commit()
+    connection.close()
+
+def add_policy(name, user, authorizer, secret, salt):
+    connection = sqlite3.connect(DATABASE_NAME)
+    cursor = connection.cursor()
+    
+    try:
+        # Insert the new policy into the database
+        cursor.execute('''
+            INSERT INTO policies (name, user, authorizer, secret, salt, 2FA_uri)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (name, user, authorizer, secret, salt))
+
+        connection.commit()
+        print(f"Policy '{name}' created successfully.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        connection.close()
+    
+# https://pypi.org/project/pyotp/
+def generate_totp_uri(user) :
+    secret = pyotp.random_base32()
+    totp = pyopt.TOTP(secret)
+    return totp.provisioning_uri(name=user,isuer_name=APP_NAME)
 
 def recv_all(sock, n):
     data = b''
@@ -99,7 +158,35 @@ class Handler(socketserver.BaseRequestHandler):
                     send_json(ssock, {"status": "ok"})
                 # TODO
                 elif action == "create_policy":
-                    pass
+                    token = msg.get("token")
+                    user = validate_token(token)  # Validate the provided token
+                    if not user:
+                        send_json(ssock, {"status": "fail", "reason": "invalid token"})
+                        continue
+
+                    # Retrieve the policy data sent from the client
+                    policy = msg.get("policy")
+    
+                    # Optional: Validate the policy structure if needed
+                    if (not policy or
+                        "name" not in policy or
+                        "user" not in policy or
+                        "authorizer" not in policy
+                        or "secret" not in policy
+                        or "salt" not in policy) :
+                        send_json(ssock, {"status": "fail", "reason": "invalid policy structure"})
+                        continue
+
+                    # Here you would typically save the policy to a database or process it
+                    # For now, we will just print the policy as an example
+                    try:
+                        add_policy(policy["name"], policy["user"], policy["authorizer"], policy["secret"], policy["salt"])
+                        send_json(ssock, {"status": "ok", "reason": "policy created"})
+                    except Exception as e:
+                        send_json(ssock, {"status": "fail", "reason": f"failed to create policy: {str(e)}"})
+                        # Respond back to the client that the policy was successfully created
+                        send_json(ssock, {"status": "ok", "reason": "policy created"})
+
                 # TODO
                 elif action == "request_download" :
                     pass
@@ -132,6 +219,7 @@ class TLSServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         return ssock, addr
 
 if __name__ == "__main__":
+    init_db()  # Initialize the database at startup
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(certfile=CERTFILE, keyfile=KEYFILE)
     ctx.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1

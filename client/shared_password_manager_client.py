@@ -1,8 +1,111 @@
 #!/usr/bin/env python3
 import socket, ssl, struct, json
+import base64
+import os
+from getpass import getpass
+
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+import pyotp
+
+APP_NAME = "cs-4910-shared-password-manager"
 
 CA_CERT = "cert.pem"
 HOST, PORT = "127.0.0.1", 8443
+
+PASSWORD_ITERATIONS = 1_200_000
+MAX_SECRET_SIZE = 256
+
+# https://stackoverflow.com/questions/71667730/encrypting-message-with-user-input-as-key-python-fernet
+# https://stackoverflow.com/questions/71667730/encrypting-message-with-user-input-as-key-python-fernet
+# Get a fernet key from a password 
+def derive_key_from_password(password,salt) :
+    password = bytes(password, "UTF-8")
+    
+    # get a key derivation function
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(),
+                     length=32,
+                     salt=salt,
+                     iterations=PASSWORD_ITERATIONS)
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    return key
+
+def create_encrypted_message(message=None,pass_prompt="enter password to encrypt message: ") :
+    """ Asks user for a message and returns a string representation so I can send it on json
+
+    This is for the user only, and isn't decrypted by the server"""
+    salt = os.urandom(16)
+    
+    # get password for encryption
+    password = getpass(prompt=pass_prompt)
+    # key for fernet
+    # https://cryptography.io/en/latest/fernet/#using-passwords-with-fernet
+    key = derive_key_from_password(password, salt)
+    f = Fernet(key)
+    # get message to encrypt
+
+    if message == None :
+        getsecret = lambda  : bytes(getpass(prompt="Enter a secret message to encrypt: "), "UTF-8")
+        secret = getsecret()
+        while len(secret) > MAX_SECRET_SIZE :
+            print("Secret too big, must be lower than", MAX_SECRET_SIZE, "bytes")
+            secret = getsecret()
+    else :
+        secret = bytes(message, "utf-8")
+
+    # encrypt the secret
+    encrypted_message = f.encrypt(secret).decode("utf-8")
+    return encrypted_message, salt
+
+def decrypt_message(secret,salt) :
+    """Takes a secret and salt, returns the plaintext of secret,
+    secret should be a string, assumes UTF-8 encoding"""
+    
+    leave = False
+    tries = 0
+    while (!leave or tries < 3) :
+        password = getpass(prompt="enter password to decrypt message: ")
+        key = derive_key_from_password(password, salt)
+        f = Fernet(key)
+        try :
+            value = f.decrypt(secret).decode("utf-8")
+        except cryptography.fernet.InvalidToken :
+            print("Failed to decrypt (likely due to wrong password), please try again")
+            tries += 1
+        finally :
+            leave = True
+    # left program without error
+    if leave == True :
+        return value.decode("utf-8")
+    else :
+        print("decryption failed")
+        return False
+    
+    
+# POLICY should have the following things...
+# NAME : name of the policy
+# USER : person who can download the file
+# AUTHORIZER : person who user needs to request permission from to dl
+# SECRET : secret the user wants back
+# SALT : the salt for decrypting the secret.
+def create_policy() :
+    name = input("Enter the name of the policy: ")
+    user = input("Enter the name of the user who can download the secret: ")
+    authorizer = input("Enter the name of the authorizer, the person who needs to approve the download: ")
+    encrypted_secret, salt = create_encrypted_message(secret)
+
+    # Construct the policy dictionary
+    policy = {
+        "name": name,
+        "user": user,
+        "authorizer": authorizer,
+        "secret": encrypted_secret,  # Encrypted secret
+        "salt": base64.urlsafe_b64encode(salt).decode()
+    }
+
+    return policy
 
 def recv_all(sock, n):
     data = b''
@@ -24,6 +127,7 @@ def recv_json(sock):
     return json.loads(payload.decode())
 
 def send_json(sock, obj):
+    """send a json to the server, obj is a dictionary"""
     data = json.dumps(obj).encode()
     sock.sendall(struct.pack("!I", len(data)))
     sock.sendall(data)
@@ -37,7 +141,7 @@ def main():
         with ctx.wrap_socket(sock, server_hostname="localhost") as ssock:
             # 1) login
             user = input("Username: ").strip()
-            pwd = input("Password: ").strip()
+            pwd = getpass().strip()
 
             send_json(ssock, {"action": "login", "user": user, "pass": pwd})
             resp = recv_json(ssock)
@@ -49,17 +153,34 @@ def main():
             print("Logged in; token expires in", resp.get("expires_in"))
             # 2) interact using token
             while True:
-                msg = input("Enter message (or 'quit'/'logout'): ").strip()
-                if not msg:
+                command = input("Enter command (use help for available commands): ").strip()
+                if not command:
                     continue
-                if msg == "quit":
+                
+                if command == "quit":
                     break
-                if msg == "logout":
+                
+                elif command == "logout":
                     send_json(ssock, {"action": "logout", "token": token})
                     print(recv_json(ssock))
                     break
-                send_json(ssock, {"action": "msg", "token": token, "body": msg})
-                print("reply:", recv_json(ssock))
+                
+                elif command == "create_policy":
+                    policy = create_policy()  
+                    send_json(ssock, {"action": "create_policy", "token": token, "policy": policy})
+                    print("Policy created and sent to server.")
+                
+                elif command == "help":
+                    # Display help information but don't send anything to the server
+                    print("Available commands:")
+                    print("- quit: Exit the application.")
+                    print("- logout: Log out from the server.")
+                    print("- create_policy: Create a new policy.")
+                    print("- help: Show this help message.")
+                    print("- download: request to download a file")
+                    print("- authenticate: authenticate a download request")                
+                else:
+                    print("Unknown command. Use 'help' for available commands.")
 
 if __name__ == "__main__":
     main()
