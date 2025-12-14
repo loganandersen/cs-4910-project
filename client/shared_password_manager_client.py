@@ -76,7 +76,7 @@ def decrypt_message(secret,salt) :
             print("Failed to decrypt (likely due to wrong password), please try again")
             tries += 1
         else :
-            return value.decode("utf-8")
+            return value
         
 
     print("decryption failed")
