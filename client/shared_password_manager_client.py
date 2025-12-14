@@ -62,7 +62,8 @@ def create_encrypted_message(message=None,pass_prompt="enter password to encrypt
 def decrypt_message(secret,salt) :
     """Takes a secret and salt, returns the plaintext of secret,
     secret should be a string, assumes UTF-8 encoding"""
-    
+
+    salt = bytes(salt,"UTF-8")
     leave = False
     tries = 0
     while (not leave or tries < 3) :
