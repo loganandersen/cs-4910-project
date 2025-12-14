@@ -52,6 +52,19 @@ def init_db():
     connection.commit()
     connection.close()
 
+def get_user_password(username):
+    """Function to retrieve the hashed password for a given username from the SQLite database."""
+    connection = sqlite3.connect(DATABASE_NAME)
+    cursor = connection.cursor()
+    
+    cursor.execute('SELECT password FROM users WHERE username = ?', (username,))
+    result = cursor.fetchone()
+    
+    connection.close()
+    
+    return result[0] if result else None
+
+    
 def add_policy(name, user, authorizer, secret, salt):
     connection = sqlite3.connect(DATABASE_NAME)
     cursor = connection.cursor()
@@ -133,7 +146,7 @@ class Handler(socketserver.BaseRequestHandler):
                 if action == "login":
                     user = msg.get("user", "")
                     pwd = msg.get("pass", "").encode()
-                    stored = USERS.get(user)
+                    stored = get_user_password(user)
                     if stored and bcrypt.checkpw(pwd, stored):
                         token = make_token()
                         expiry = time.time() + SESSION_TTL
