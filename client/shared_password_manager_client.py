@@ -176,7 +176,7 @@ def approve_or_deny_download(sock, token, policy_name,deny):
     msg = {
         "action": action,
         "token": token,
-        "policy_name": policy_name
+        "policy_name": policy_name,
         "deny" : "yes" if deny else "no"
     }
     send_json(sock, msg)
