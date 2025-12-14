@@ -94,7 +94,7 @@ def create_policy() :
     name = input("Enter the name of the policy: ")
     user = input("Enter the name of the user who can download the secret: ")
     authorizer = input("Enter the name of the authorizer, the person who needs to approve the download: ")
-    encrypted_secret, salt = create_encrypted_message(secret)
+    encrypted_secret, salt = create_encrypted_message()
 
     # Construct the policy dictionary
     policy = {
