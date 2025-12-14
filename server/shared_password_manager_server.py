@@ -25,7 +25,7 @@ sessions_lock = threading.Lock()
 
 # Initialize the SQLite database
 def init_db():
-    connection = sqlite3.connect('example.db')
+    connection = sqlite3.connect(DATABASE_NAME)
     cursor = connection.cursor()
 
     # Create users table if it doesn't exist
