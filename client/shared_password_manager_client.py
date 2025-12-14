@@ -64,7 +64,6 @@ def decrypt_message(secret,salt) :
     """Takes a secret and salt, returns the plaintext of secret,
     secret should be a string, assumes UTF-8 encoding"""
 
-    salt = bytes(salt,"UTF-8")
     tries = 0
     value = None
     while (tries < 3) :
@@ -150,7 +149,7 @@ def download(sock, token, policy_name):
         if approval_response.get("status") == "ok":
             # Download the secret upon approval
             secret = approval_response.get("secret")
-            salt = approval_response.get("salt")
+            salt = base64.urlsafe_b64decode(approval_response.get("salt"))
             message = decrypt_message(secret,salt)
             if message  :
                 print("Secret message below")
