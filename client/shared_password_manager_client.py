@@ -65,9 +65,9 @@ def decrypt_message(secret,salt) :
     secret should be a string, assumes UTF-8 encoding"""
 
     salt = bytes(salt,"UTF-8")
-    leave = False
     tries = 0
-    while (not leave or tries < 3) :
+    value = None
+    while (tries < 3) :
         password = getpass(prompt="enter password to decrypt message: ")
         key = derive_key_from_password(password, salt)
         f = Fernet(key)
@@ -77,13 +77,10 @@ def decrypt_message(secret,salt) :
             print("Failed to decrypt (likely due to wrong password), please try again")
             tries += 1
         finally :
-            leave = True
-    # left program without error
-    if leave == True :
-        return value.decode("utf-8")
-    else :
-        print("decryption failed")
-        return False
+            return value.decode("utf-8")
+
+    print("decryption failed")
+    return False
     
     
 # POLICY should have the following things...
@@ -154,7 +151,7 @@ def download(sock, token, policy_name):
             secret = approval_response.get("secret")
             salt = approval_response.get("salt")
             message = decrypt_message(secret,salt)
-            if message != None :
+            if message  :
                 print("Secret message below")
                 print(message)
             else :
