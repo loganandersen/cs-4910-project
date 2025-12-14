@@ -1,3 +1,6 @@
+import sqlite3
+import bcrypt
+
 DATABASE_NAME = 'database.db'
 
 def create_user(username, password):
