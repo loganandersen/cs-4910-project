@@ -146,28 +146,26 @@ def download(sock, token, policy_name):
     print("Response from server:", response)
 
     # Poll for approval
-    if response.get("status") == "pending":
-        print("Waiting for approval from the authorizer...")
-        while True:
-            approval_response = recv_json(sock)
-            print("Approval Response from server:", approval_response)
-
-            if approval_response.get("status") == "ok":
-                # Download the secret upon approval
-                secret = approval_response.get("secret")
-                salt = approval_response.get("salt")
-                message = decrypt_message(secret,salt)
-                if message != None :
-                    print("Secret message below")
-                    print(message)
-                else :
-                    print("No message found")
-                
+    responseapproved = True
+    while True:
+        approval_response = recv_json(sock)
+        print("Approval Response from server:", approval_response)
+        
+        if approval_response.get("status") == "ok":
+            # Download the secret upon approval
+            secret = approval_response.get("secret")
+            salt = approval_response.get("salt")
+            message = decrypt_message(secret,salt)
+            if message != None :
+                print("Secret message below")
+                print(message)
+            else :
+                print("No message found")
                 break
-            elif approval_response.get("status") == "fail":
-                print("Approval failed:", approval_response.get("reason"))
-                break
-            time.sleep(1)  # Wait a little before polling again
+        elif approval_response.get("status") == "fail":
+            print("Approval failed:", approval_response.get("reason"))
+            break
+        time.sleep(1)  # Wait a little before polling again
 
 
 def approve_or_deny_download(sock, token, policy_name,deny):
