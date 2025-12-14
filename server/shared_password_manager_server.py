@@ -144,7 +144,7 @@ def add_policy(name, user, authorizer, secret, salt):
 # https://pypi.org/project/pyotp/
 def generate_totp_uri(user) :
     secret = pyotp.random_base32()
-    totp = pyopt.TOTP(secret)
+    totp = pyotp.TOTP(secret)
     return totp.provisioning_uri(name=user,isuer_name=APP_NAME)
 
 def recv_all(sock, n):
