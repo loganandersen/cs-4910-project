@@ -134,7 +134,7 @@ def send_json(sock, obj):
 
 def download(sock, token, policy_name):
     """Request to download a policy and wait for approval."""
-    action = "request_download"
+    action = "download"
     msg = {
         "action": action,
         "token": token,
@@ -172,7 +172,7 @@ def download(sock, token, policy_name):
 
 def approve_or_deny_download(sock, token, policy_name,deny):
     """Send a request to approve a download for a policy."""
-    action = "download"
+    action = "approve_download"
     msg = {
         "action": action,
         "token": token,
