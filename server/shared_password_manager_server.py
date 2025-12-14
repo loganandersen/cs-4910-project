@@ -145,7 +145,7 @@ def add_policy(name, user, authorizer, secret, salt):
 def generate_totp_uri(user) :
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
-    return totp.provisioning_uri(name=user,isuer_name=APP_NAME)
+    return totp.provisioning_uri(name=user,issuer_name=APP_NAME)
 
 def recv_all(sock, n):
     data = b''
@@ -247,8 +247,6 @@ class Handler(socketserver.BaseRequestHandler):
                         send_json(ssock, {"status": "fail", "reason": "invalid policy structure"})
                         continue
 
-                    # Here you would typically save the policy to a database or process it
-                    # For now, we will just print the policy as an example
                     try:
                         add_policy(policy["name"], policy["user"], policy["authorizer"], policy["secret"], policy["salt"])
                         send_json(ssock, {"status": "ok", "reason": "policy created"})
