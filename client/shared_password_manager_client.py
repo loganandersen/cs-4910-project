@@ -221,7 +221,7 @@ def main():
                     print("- authenticate: authenticate a download request")
                 elif command == "download":
                     policyname = input("Enter name of policy you want to download: ")
-                    send_json(ssock, {"action": "download", "token": token, policy: policyname})
+                    download(sock, token, policyname)
                 else:
                     print("Unknown command. Use 'help' for available commands.")
 
