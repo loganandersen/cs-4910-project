@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import socket, ssl, struct, json
+import cryptography
 import base64
 import os
 from getpass import getpass
