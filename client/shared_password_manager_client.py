@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 import pyotp
+import time
 
 APP_NAME = "cs-4910-shared-password-manager"
 
