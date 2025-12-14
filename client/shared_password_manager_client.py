@@ -142,11 +142,7 @@ def download(sock, token, policy_name):
     }
     send_json(sock, msg)
     
-    response = recv_json(sock)
-    print("Response from server:", response)
-
     # Poll for approval
-    responseapproved = True
     while True:
         approval_response = recv_json(sock)
         print("Approval Response from server:", approval_response)
