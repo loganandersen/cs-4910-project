@@ -190,6 +190,21 @@ def approve_download(sock, token,policy_name) :
 def deny_download(sock, token,policy_name) :
     approve_or_deny_download(sock, token, policy_name,deny=True)
 
+def list_policies(sock, token):
+    """Request the list of policies."""
+    action = "list_policies"
+    msg = {
+        "action": action,
+        "token": token
+    }
+    send_json(sock, msg)
+
+    response = recv_json(sock)
+    if response.get("status") == "ok":
+        print("Policies received:")
+        print(response.get("policies"))
+    else:
+        print("Error:", response.get("reason"))
 
     
 def main():
@@ -240,6 +255,7 @@ def main():
                     print("- download: request to download a file")
                     print("- authenticate: authenticate a download request")
                     print("- deny: deny a download request")
+                    print("- list_policies: list policies you are privy to")
                     
                 elif command == "download":
                     policyname = input("Enter name of policy you want to download: ")

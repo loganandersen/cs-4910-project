@@ -76,6 +76,51 @@ def get_policy_by_name(policy_name):
     
     return policy[0] if policy else None # Returns None if not found, or a tuple representing the policy
 
+def list_policies(user):
+    """Retrieve lists of policies for the user."""
+    user_policies = []
+    authorizer_policies = []
+    pending_requests_for_user = []
+
+    # Query all policies from the database
+    connection = sqlite3.connect('example.db')
+    cursor = connection.cursor()
+
+    # Query for policies where the user is a user
+    cursor.execute('SELECT name FROM policies WHERE user = ?', (user,))
+    for row in cursor.fetchall():
+        user_policies.append(row[0])  # Append policy name to user_policies
+
+    # Query for policies where the user is an authorizer
+    cursor.execute('SELECT name FROM policies WHERE authorizer = ?', (user,))
+    for row in cursor.fetchall():
+        authorizer_policies.append(row[0])  # Append policy name to authorizer_policies
+
+    # Check for pending requests for authorizer policies
+    with pending_requests_lock:
+        for policy_name in authorizer_policies:
+            if policy_name in pending_requests:
+                pending_requests_for_user.append(policy_name)  # Mark as pending
+
+    # Constructing the response
+    response_lines = []
+    
+    # List user policies
+    response_lines.append("Policies accessible to you (User):")
+    response_lines.extend(user_policies)
+
+    # List authorizer policies with pending requests marked
+    response_lines.append("\nPolicies you are authorizing (Authorizer):")
+    for policy_name in authorizer_policies:
+        if policy_name in pending_requests_for_user:
+            response_lines.append(f"{policy_name} *")  # Mark with an asterisk for pending
+        else:
+            response_lines.append(policy_name)
+
+    connection.close()
+    
+    return "\n".join(response_lines)  # Return formatted string
+
     
 def add_policy(name, user, authorizer, secret, salt):
     connection = sqlite3.connect(DATABASE_NAME)
@@ -235,6 +280,7 @@ class Handler(socketserver.BaseRequestHandler):
                         secret = policy[4]  # Assuming the secret is at index 4
                         salt = policy[5]
                         send_json(ssock, {"status": "ok", "secret": secret, "salt": salt})
+                        
                     else:
                         # Request approval if the user is not the authorizer
                         with pending_requests_lock:
@@ -243,7 +289,7 @@ class Handler(socketserver.BaseRequestHandler):
                         # Respond to the requester that approval is pending
                         send_json(ssock, {"status": "pending", "reason": "waiting for authorizer approval"})
                     
-                # TODO 
+                
                 elif action == "approve_download" :
                     token = msg.get("token")
                     authorizer = validate_token(token)  # Validate the authorizer's token
@@ -271,7 +317,15 @@ class Handler(socketserver.BaseRequestHandler):
                             send_json(ssock, {"status": "ok", "reason": "download denied"})
                             send_json(requesting_socket, {"status": "fail", "reason": "authenticator denied your request"})
 
+                elif action == "list_policies":
+                    token = msg.get("token")
+                    user = validate_token(token)
+                    if not user:
+                        send_json(ssock, {"status": "fail", "reason": "invalid token"})
+                        continue
 
+                    policies_list = list_policies(user)  # Call the list_policies function
+                    send_json(ssock, {"status": "ok", "policies": policies_list})
                 else:
                     send_json(ssock, {"status": "fail", "reason": "unknown action"})
         except (ssl.SSLError, OSError) as e:
