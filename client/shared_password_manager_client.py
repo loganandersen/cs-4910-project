@@ -132,6 +132,46 @@ def send_json(sock, obj):
     sock.sendall(struct.pack("!I", len(data)))
     sock.sendall(data)
 
+def download(sock, token, policy_name):
+    """Request to download a policy and wait for approval."""
+    action = "request_download"
+    msg = {
+        "action": action,
+        "token": token,
+        "policy": policy_name
+    }
+    send_json(sock, msg)
+    
+    response = recv_json(sock)
+    print("Response from server:", response)
+
+    # Poll for approval
+    if response.get("status") == "pending":
+        print("Waiting for approval from the authorizer...")
+        while True:
+            approval_response = recv_json(sock)
+            print("Approval Response from server:", approval_response)
+
+            if approval_response.get("status") == "ok":
+                # Download the secret upon approval
+                secret = approval_response.get("secret")
+                salt = approval_response.get("salt")
+                message = decrypt_message(secret,salt)
+                if message != None :
+                    print("Secret message below")
+                    print(message)
+                else :
+                    print("No message found")
+                
+                break
+            elif approval_response.get("status") == "fail":
+                print("Approval failed:", approval_response.get("reason"))
+                break
+            time.sleep(1)  # Wait a little before polling again
+
+    
+
+    
 def main():
     ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=CA_CERT)
     ctx.check_hostname = True
@@ -178,7 +218,10 @@ def main():
                     print("- create_policy: Create a new policy.")
                     print("- help: Show this help message.")
                     print("- download: request to download a file")
-                    print("- authenticate: authenticate a download request")                
+                    print("- authenticate: authenticate a download request")
+                elif command == "download":
+                    policyname = input("Enter name of policy you want to download: ")
+                    send_json(ssock, {"action": "download", "token": token, policy: policyname})
                 else:
                     print("Unknown command. Use 'help' for available commands.")
 

@@ -14,14 +14,14 @@ KEYFILE = "key.pem"
 HOST, PORT = "0.0.0.0", 8443
 SESSION_TTL = 300  # seconds
 
-# Example user DB: username -> bcrypt-hashed password
-USERS = {
-    "alice": bcrypt.hashpw(b"secret123", bcrypt.gensalt())
-}
-
 # In-memory session store: token -> (username, expiry)
 sessions = {}
 sessions_lock = threading.Lock()
+
+# policy_name -> (authorizer, requesting_user, requesting_socket)
+pending_requests = {}
+pending_requests_lock = threading.Lock()
+
 
 # Initialize the SQLite database
 def init_db():
@@ -41,7 +41,7 @@ def init_db():
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS policies (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE,
         user TEXT NOT NULL,
         authorizer TEXT NOT NULL,
         secret TEXT NOT NULL,
@@ -65,6 +65,17 @@ def get_user_password(username):
     
     return result[0] if result else None
 
+def get_policy_by_name(policy_name):
+    connection = sqlite3.connect('example.db')
+    cursor = connection.cursor()
+    
+    cursor.execute('SELECT * FROM policies WHERE name = ?', (policy_name,))
+    policy = cursor.fetchone()
+    
+    connection.close()
+    
+    return policy[0] if policy else None # Returns None if not found, or a tuple representing the policy
+
     
 def add_policy(name, user, authorizer, secret, salt):
     connection = sqlite3.connect(DATABASE_NAME)
@@ -74,7 +85,7 @@ def add_policy(name, user, authorizer, secret, salt):
     try:
         # Insert the new policy into the database
         cursor.execute('''
-            INSERT INTO policies (name, user, authorizer, secret, salt, 2FA_uri)
+            INSERT INTO policies (name, user, authorizer, secret, salt, url)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', (name, user, authorizer, secret, salt, url))
 
@@ -171,7 +182,6 @@ class Handler(socketserver.BaseRequestHandler):
                     with sessions_lock:
                         sessions.pop(token, None)
                     send_json(ssock, {"status": "ok"})
-                # TODO
                 elif action == "create_policy":
                     token = msg.get("token")
                     user = validate_token(token)  # Validate the provided token
@@ -203,14 +213,70 @@ class Handler(socketserver.BaseRequestHandler):
                         send_json(ssock, {"status": "ok", "reason": "policy created"})
 
                 # TODO
-                elif action == "request_download" :
-                    pass
+                elif action == "download" :
+                    token = msg.get("token")
+                    user = validate_token(token)  # Validate the provided token
+                    if not user:
+                        send_json(ssock, {"status": "fail", "reason": "invalid token"})
+                        continue
+
+                    policy_name = msg.get("policy")  # Get the policy name from the request
+                    if not policy_name:
+                        send_json(ssock, {"status": "fail", "reason": "policy name is required"})
+                        continue
+
+                    policy = get_policy_by_name(policy_name)
+                    if not policy:
+                        send_json(ssock, {"status": "fail", "reason": "policy not found"})
+                        continue
+
+                    authorizer = policy[3]
+                    if user == authorizer:
+                        # Allow the user to download the secret
+                        secret = policy[4]  # Assuming the secret is at index 4
+                        salt = policy[5]
+                        send_json(ssock, {"status": "ok", "secret": secret, "salt": salt})
+                    else:
+                        # Request approval if the user is not the authorizer
+                        with pending_requests_lock:
+                            pending_requests[policy_name] = (authorizer, user)
+        
+                        # Respond to the requester that approval is pending
+                        send_json(ssock, {"status": "pending", "reason": "waiting for authorizer approval"})
+                    
                 # TODO 
                 elif action == "approve_download" :
-                    pass
-                # TODO
-                elif action == "reset_password" :
-                    pass
+                    token = msg.get("token")
+                    authorizer = validate_token(token)  # Validate the authorizer's token
+                    if not authorizer:
+                        send_json(ssock, {"status": "fail", "reason": "invalid token"})
+                        continue
+
+                    policy_name = msg.get("policy_name")
+    
+                    with pending_requests_lock:
+                        if policy_name not in pending_requests:
+                            send_json(ssock, {"status": "fail", "reason": "no pending download request found"})
+                            continue
+
+                        requesting_user, _, requesting_socket = pending_requests[policy_name]  # Get the socket
+                        secret,salt = get_policy_by_name(policy_name)[4:6]
+
+                        action = input("Would you like to approve the download? (y for yes)")
+                        if (action == "y") :
+                            # Proceed to approve the request
+                            del pending_requests[policy_name]  # Remove the request from pending
+                            send_json(ssock, {"status": "ok", "reason": "download approved"})
+                            send_json(requesting_socket, {"status": "ok", "secret": secret, "salt": salt})
+                        else :
+                             send_json(ssock, {"status": "ok", "reason": "download rejected"})
+                             send_json(requesting_socket, {"status": "fail", "reason": "authorizer rejection"})
+
+
+
+
+                    
+
                 else:
                     send_json(ssock, {"status": "fail", "reason": "unknown action"})
         except (ssl.SSLError, OSError) as e:
