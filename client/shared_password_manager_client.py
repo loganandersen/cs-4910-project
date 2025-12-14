@@ -76,8 +76,9 @@ def decrypt_message(secret,salt) :
         except cryptography.fernet.InvalidToken :
             print("Failed to decrypt (likely due to wrong password), please try again")
             tries += 1
-        finally :
+        else :
             return value.decode("utf-8")
+        
 
     print("decryption failed")
     return False
