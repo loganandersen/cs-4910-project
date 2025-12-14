@@ -172,7 +172,7 @@ def download(sock, token, policy_name):
 
 def approve_or_deny_download(sock, token, policy_name,deny):
     """Send a request to approve a download for a policy."""
-    action = "approve_download"
+    action = "download"
     msg = {
         "action": action,
         "token": token,
