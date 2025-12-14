@@ -65,7 +65,7 @@ def decrypt_message(secret,salt) :
     
     leave = False
     tries = 0
-    while (!leave or tries < 3) :
+    while (not leave or tries < 3) :
         password = getpass(prompt="enter password to decrypt message: ")
         key = derive_key_from_password(password, salt)
         f = Fernet(key)
