@@ -66,7 +66,7 @@ def get_user_password(username):
     return result[0] if result else None
 
 def get_policy_by_name(policy_name):
-    connection = sqlite3.connect('example.db')
+    connection = sqlite3.connect(DATABASE_NAME)
     cursor = connection.cursor()
     
     cursor.execute('SELECT * FROM policies WHERE name = ?', (policy_name,))
@@ -83,7 +83,7 @@ def list_policies(user):
     pending_requests_for_user = []
 
     # Query all policies from the database
-    connection = sqlite3.connect('example.db')
+    connection = sqlite3.connect(DATABASE_NAME)
     cursor = connection.cursor()
 
     # Query for policies where the user is a user
